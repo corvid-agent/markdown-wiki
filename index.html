@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Wiki</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#08080f;--card:#12121a;--card-hover:#1a1a2a;
+    --purple:#8b5cf6;--purple-dim:#6d45d0;--purple-glow:rgba(139,92,246,.15);
+    --cyan:#06b6d4;--cyan-dim:#0891b2;--cyan-glow:rgba(6,182,212,.12);
+    --text:#e2e8f0;--text-dim:#94a3b8;--text-muted:#64748b;
+    --border:#1e1e2e;--border-light:#2a2a3a;
+    --danger:#ef4444;--danger-dim:#dc2626;
+    --radius:8px;--radius-lg:12px;
+    --mono:'SF Mono','Cascadia Code','Fira Code','JetBrains Mono',Consolas,'Courier New',monospace;
+    --sans:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --sidebar-w:280px;
+    --transition:180ms ease;
+  }
+  html{font-size:15px}
+  body{
+    font-family:var(--sans);color:var(--text);background:var(--bg);
+    height:100vh;overflow:hidden;display:flex;flex-direction:column;
+  }
+  button{
+    font-family:inherit;cursor:pointer;border:none;background:none;
+    color:var(--text);font-size:.875rem;
+  }
+  input,textarea{
+    font-family:inherit;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:var(--radius);
+    outline:none;transition:border var(--transition);
+  }
+  input:focus,textarea:focus{border-color:var(--purple)}
+  ::selection{background:var(--purple);color:#fff}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+  /* ---- Header ---- */
+  header{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 20px;background:var(--card);
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;z-index:20;
+  }
+  #menu-toggle{
+    display:none;width:36px;height:36px;
+    align-items:center;justify-content:center;
+    border-radius:var(--radius);font-size:1.2rem;
+    background:var(--bg);border:1px solid var(--border);
+  }
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo svg{width:28px;height:28px}
+  .logo h1{font-size:1.1rem;font-weight:700;letter-spacing:-.02em}
+  .logo span{color:var(--purple)}
+  .header-actions{margin-left:auto;display:flex;gap:8px}
+  .header-actions button{
+    padding:6px 14px;border-radius:var(--radius);
+    font-size:.8rem;font-weight:600;
+    transition:background var(--transition),border-color var(--transition);
+  }
+  .btn-primary{background:var(--purple);color:#fff}
+  .btn-primary:hover{background:var(--purple-dim)}
+  .btn-outline{border:1px solid var(--border);background:var(--bg)}
+  .btn-outline:hover{border-color:var(--purple);background:var(--purple-glow)}
+  .btn-danger{border:1px solid var(--danger);color:var(--danger);background:var(--bg)}
+  .btn-danger:hover{background:rgba(239,68,68,.1)}
+  .btn-icon{
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);
+    font-size:1rem;
+  }
+  .btn-icon:hover{border-color:var(--purple);background:var(--purple-glow)}
+
+  /* ---- Layout ---- */
+  .app{display:flex;flex:1;overflow:hidden}
+
+  /* ---- Sidebar ---- */
+  .sidebar{
+    width:var(--sidebar-w);min-width:var(--sidebar-w);
+    background:var(--card);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;
+    transition:transform .25s ease,opacity .25s ease;
+  }
+  .sidebar-header{padding:14px 16px 10px;flex-shrink:0}
+  .sidebar-header h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px}
+  .search-box{position:relative}
+  .search-box input{
+    width:100%;padding:8px 10px 8px 32px;font-size:.85rem;
+  }
+  .search-box svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted)}
+  .page-list{flex:1;overflow-y:auto;padding:6px 8px}
+  .page-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 10px;border-radius:var(--radius);cursor:pointer;
+    font-size:.875rem;transition:background var(--transition);
+    margin-bottom:2px;
+  }
+  .page-item:hover{background:var(--card-hover)}
+  .page-item.active{background:var(--purple-glow);color:var(--purple)}
+  .page-item .page-name{
+    flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .page-item .page-actions{display:flex;gap:2px;opacity:0;transition:opacity var(--transition)}
+  .page-item:hover .page-actions{opacity:1}
+  .page-item .page-actions button{
+    width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+    border-radius:4px;font-size:.75rem;
+  }
+  .page-item .page-actions button:hover{background:var(--border-light)}
+  .sidebar-footer{
+    padding:10px 16px;border-top:1px solid var(--border);
+    font-size:.7rem;color:var(--text-muted);text-align:center;flex-shrink:0;
+  }
+  .sidebar-footer kbd{
+    background:var(--bg);border:1px solid var(--border);
+    padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:.65rem;
+  }
+
+  /* ---- Main ---- */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .page-title-bar{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 20px;border-bottom:1px solid var(--border);flex-shrink:0;
+  }
+  .page-title-bar input{
+    flex:1;padding:6px 10px;font-size:1.1rem;font-weight:600;
+    background:transparent;border:1px solid transparent;border-radius:var(--radius);
+  }
+  .page-title-bar input:hover{border-color:var(--border)}
+  .page-title-bar input:focus{border-color:var(--purple);background:var(--card)}
+  .editor-area{flex:1;display:flex;overflow:hidden}
+
+  /* ---- Editor Pane ---- */
+  .editor-pane{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0}
+  .pane-header{
+    display:flex;align-items:center;padding:6px 16px;
+    border-bottom:1px solid var(--border);flex-shrink:0;
+  }
+  .pane-header span{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);font-weight:600}
+  .editor-pane textarea{
+    flex:1;width:100%;padding:16px 20px;resize:none;
+    font-family:var(--mono);font-size:.9rem;line-height:1.7;
+    background:var(--bg);border:none;border-radius:0;
+    tab-size:2;
+  }
+
+  /* ---- Preview Pane ---- */
+  .preview-pane{flex:1;display:flex;flex-direction:column;min-width:0}
+  .preview-pane .pane-header span{color:var(--cyan)}
+  .preview-content{
+    flex:1;padding:20px 24px;overflow-y:auto;
+    line-height:1.7;font-size:.95rem;
+  }
+  /* Markdown rendered styles */
+  .preview-content h1{font-size:1.8rem;font-weight:700;margin:0 0 .6em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+  .preview-content h2{font-size:1.4rem;font-weight:700;margin:1.2em 0 .5em;padding-bottom:.2em;border-bottom:1px solid var(--border)}
+  .preview-content h3{font-size:1.15rem;font-weight:600;margin:1em 0 .4em}
+  .preview-content h4{font-size:1rem;font-weight:600;margin:.8em 0 .3em}
+  .preview-content h5{font-size:.9rem;font-weight:600;margin:.8em 0 .3em}
+  .preview-content h6{font-size:.85rem;font-weight:600;color:var(--text-muted);margin:.8em 0 .3em}
+  .preview-content p{margin:0 0 1em}
+  .preview-content strong{font-weight:700;color:#f1f5f9}
+  .preview-content em{font-style:italic}
+  .preview-content a{color:var(--cyan);text-decoration:none}
+  .preview-content a:hover{text-decoration:underline}
+  .preview-content a.wiki-link{color:var(--purple);font-weight:500}
+  .preview-content a.wiki-link.missing{color:var(--danger);opacity:.7;text-decoration:underline dotted}
+  .preview-content code{
+    font-family:var(--mono);font-size:.85em;
+    background:var(--card);padding:2px 6px;border-radius:4px;
+    border:1px solid var(--border);
+  }
+  .preview-content pre{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 18px;margin:0 0 1em;
+    overflow-x:auto;
+  }
+  .preview-content pre code{
+    background:none;border:none;padding:0;font-size:.85rem;
+    line-height:1.6;display:block;
+  }
+  .preview-content blockquote{
+    border-left:3px solid var(--purple);padding:4px 16px;
+    margin:0 0 1em;color:var(--text-dim);
+    background:var(--purple-glow);border-radius:0 var(--radius) var(--radius) 0;
+  }
+  .preview-content blockquote p:last-child{margin-bottom:0}
+  .preview-content ul,
+  .preview-content ol{margin:0 0 1em;padding-left:1.5em}
+  .preview-content li{margin-bottom:.3em}
+  .preview-content li ul,
+  .preview-content li ol{margin:0.3em 0 0}
+  .preview-content img{max-width:100%;border-radius:var(--radius);margin:.5em 0}
+  .preview-content hr{border:none;border-top:1px solid var(--border);margin:1.5em 0}
+  .preview-content table{width:100%;border-collapse:collapse;margin:0 0 1em}
+  .preview-content th,.preview-content td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+  .preview-content th{background:var(--card);font-weight:600}
+
+  /* ---- Modal ---- */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+    z-index:100;align-items:center;justify-content:center;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;width:90%;max-width:400px;
+  }
+  .modal h3{margin-bottom:14px;font-size:1rem}
+  .modal input{width:100%;padding:10px 12px;font-size:.95rem;margin-bottom:16px}
+  .modal .modal-actions{display:flex;justify-content:flex-end;gap:8px}
+
+  /* ---- Toast ---- */
+  .toast{
+    position:fixed;bottom:20px;right:20px;z-index:200;
+    background:var(--card);border:1px solid var(--purple);
+    border-radius:var(--radius);padding:10px 18px;
+    font-size:.85rem;color:var(--purple);
+    transform:translateY(80px);opacity:0;
+    transition:transform .3s ease,opacity .3s ease;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+
+  /* ---- Responsive ---- */
+  @media(max-width:768px){
+    #menu-toggle{display:flex}
+    .sidebar{
+      position:fixed;top:0;left:0;bottom:0;z-index:50;
+      transform:translateX(-100%);opacity:0;
+    }
+    .sidebar.open{transform:translateX(0);opacity:1}
+    .sidebar-backdrop{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49;
+    }
+    .sidebar-backdrop.open{display:block}
+    .editor-area{flex-direction:column}
+    .editor-pane{border-right:none;border-bottom:1px solid var(--border)}
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <button id="menu-toggle" aria-label="Toggle sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#8b5cf6" fill-opacity=".15"/>
+      <path d="M8 22V10l5 6 5-6v12" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 10v12" stroke="#06b6d4" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M19 13h6" stroke="#06b6d4" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+    <h1><span>Markdown</span> Wiki</h1>
+  </div>
+  <div class="header-actions">
+    <button class="btn-outline" id="btn-export" title="Export as .md">Export</button>
+    <button class="btn-primary" id="btn-save" title="Ctrl+S">Save</button>
+  </div>
+</header>
+
+<!-- App -->
+<div class="app">
+  <!-- Sidebar backdrop for mobile -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Pages</h2>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Search pages...">
+      </div>
+    </div>
+    <div class="page-list" id="page-list"></div>
+    <div class="sidebar-footer">
+      <kbd>Ctrl</kbd>+<kbd>N</kbd> New &nbsp; <kbd>Ctrl</kbd>+<kbd>S</kbd> Save
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="page-title-bar">
+      <input type="text" id="page-title" placeholder="Page title..." spellcheck="false">
+    </div>
+    <div class="editor-area">
+      <div class="editor-pane">
+        <div class="pane-header"><span>Editor</span></div>
+        <textarea id="editor" spellcheck="false" placeholder="Write your markdown here..."></textarea>
+      </div>
+      <div class="preview-pane">
+        <div class="pane-header"><span>Preview</span></div>
+        <div class="preview-content" id="preview"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New / Rename Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">New Page</h3>
+    <input type="text" id="modal-input" placeholder="Page name...">
+    <div class="modal-actions">
+      <button class="btn-outline" id="modal-cancel">Cancel</button>
+      <button class="btn-primary" id="modal-confirm">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  /* ===== Storage ===== */
+  const STORAGE_KEY = 'markdown_wiki_pages';
+  const ACTIVE_KEY  = 'markdown_wiki_active';
+
+  function loadPages(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function savePages(pages){ localStorage.setItem(STORAGE_KEY, JSON.stringify(pages)); }
+  function getActive(){ return localStorage.getItem(ACTIVE_KEY) || ''; }
+  function setActive(name){ localStorage.setItem(ACTIVE_KEY, name); }
+
+  /* ===== State ===== */
+  let pages = loadPages();
+  let currentPage = '';
+  let modalMode = ''; // 'new' | 'rename'
+
+  /* ===== DOM refs ===== */
+  const $ = id => document.getElementById(id);
+  const editor     = $('editor');
+  const preview    = $('preview');
+  const pageTitle  = $('page-title');
+  const pageList   = $('page-list');
+  const searchInput= $('search-input');
+  const btnSave    = $('btn-save');
+  const btnExport  = $('btn-export');
+  const menuToggle = $('menu-toggle');
+  const sidebar    = $('sidebar');
+  const backdrop   = $('sidebar-backdrop');
+  const modalOverlay = $('modal-overlay');
+  const modalTitle = $('modal-title');
+  const modalInput = $('modal-input');
+  const modalConfirm = $('modal-confirm');
+  const modalCancel  = $('modal-cancel');
+  const toast = $('toast');
+
+  /* ===== Welcome Page ===== */
+  const welcomeContent = `# Welcome to Markdown Wiki
+
+Welcome to your **personal wiki** powered by Markdown! Everything is stored locally in your browser using localStorage.
+
+## Getting Started
+
+- Click **Save** or press \`Ctrl+S\` to save the current page
+- Press \`Ctrl+N\` to create a new page
+- Use the sidebar to navigate between pages
+- Search for pages using the search box
+
+## Markdown Features
+
+This wiki supports a rich set of Markdown syntax:
+
+### Text Formatting
+
+- **Bold text** using \`**double asterisks**\`
+- *Italic text* using \`*single asterisks*\`
+- \`Inline code\` using backticks
+- ~~Strikethrough~~ using \`~~tildes~~\`
+
+### Links & Images
+
+- [External links](https://example.com) using \`[text](url)\`
+- Internal wiki links using \`[[Page Name]]\` syntax
+- Images using \`![alt](url)\`
+
+### Code Blocks
+
+\\\`\\\`\\\`javascript
+function hello() {
+  console.log("Hello from Markdown Wiki!");
+}
+\\\`\\\`\\\`
+
+### Blockquotes
+
+> This is a blockquote. Use it to highlight important information
+> or to quote external sources.
+
+### Lists
+
+1. First ordered item
+2. Second ordered item
+3. Third ordered item
+
+- Unordered item
+- Another item
+  - Nested item
+
+### Wiki Links
+
+You can link between pages using the \`[[Page Name]]\` syntax. Try creating a page called "Notes" and then linking to it like this: [[Notes]].
+
+## Tips
+
+- Pages are automatically saved to your browser's localStorage
+- You can **export** any page as a \`.md\` file
+- The editor supports **live preview** as you type
+- Use the search box to quickly find pages
+
+---
+
+*Built with corvid-agent design system*
+`;
+
+  /* ===== Seed data ===== */
+  if(Object.keys(pages).length === 0){
+    pages['Welcome'] = { content: welcomeContent, created: Date.now(), modified: Date.now() };
+    savePages(pages);
+  }
+
+  /* ===== Markdown Parser ===== */
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function parseMarkdown(md){
+    // Normalize line endings
+    md = md.replace(/\r\n/g, '\n');
+
+    // Extract code blocks to protect them
+    const codeBlocks = [];
+    md = md.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code){
+      const i = codeBlocks.length;
+      codeBlocks.push('<pre><code' + (lang ? ' class="language-'+escapeHtml(lang)+'"' : '') + '>' + escapeHtml(code.replace(/\n$/,'')) + '</code></pre>');
+      return '\x00CODEBLOCK'+i+'\x00';
+    });
+
+    // Extract inline code
+    const inlineCodes = [];
+    md = md.replace(/`([^`\n]+)`/g, function(_, code){
+      const i = inlineCodes.length;
+      inlineCodes.push('<code>'+escapeHtml(code)+'</code>');
+      return '\x00INLINE'+i+'\x00';
+    });
+
+    // Process block-level elements
+    const lines = md.split('\n');
+    let html = '';
+    let i = 0;
+
+    while(i < lines.length){
+      let line = lines[i];
+
+      // Code block placeholder
+      const cbMatch = line.match(/^\x00CODEBLOCK(\d+)\x00$/);
+      if(cbMatch){ html += codeBlocks[+cbMatch[1]] + '\n'; i++; continue; }
+
+      // Blank line
+      if(line.trim() === ''){ i++; continue; }
+
+      // Horizontal rule
+      if(/^(---+|===+|\*\*\*+)\s*$/.test(line.trim())){ html += '<hr>\n'; i++; continue; }
+
+      // Headings
+      const hMatch = line.match(/^(#{1,6})\s+(.*)$/);
+      if(hMatch){
+        const level = hMatch[1].length;
+        html += '<h'+level+'>' + inlineFormat(hMatch[2]) + '</h'+level+'>\n';
+        i++; continue;
+      }
+
+      // Blockquote
+      if(line.match(/^>\s?/)){
+        let bqLines = [];
+        while(i < lines.length && (lines[i].match(/^>\s?/) || (lines[i].trim() !== '' && bqLines.length > 0 && !lines[i].match(/^[#\-\*\d]/) ))){
+          bqLines.push(lines[i].replace(/^>\s?/, ''));
+          i++;
+        }
+        html += '<blockquote>' + parseMarkdown(bqLines.join('\n')) + '</blockquote>\n';
+        continue;
+      }
+
+      // Unordered list
+      if(line.match(/^(\s*)[\-\*\+]\s/)){
+        html += parseList(lines, i, 'ul');
+        // Advance past the list
+        while(i < lines.length && (lines[i].match(/^(\s*)[\-\*\+]\s/) || (lines[i].match(/^\s+/) && lines[i].trim() !== ''))){ i++; }
+        continue;
+      }
+
+      // Ordered list
+      if(line.match(/^(\s*)\d+\.\s/)){
+        html += parseList(lines, i, 'ol');
+        while(i < lines.length && (lines[i].match(/^(\s*)\d+\.\s/) || (lines[i].match(/^\s+/) && lines[i].trim() !== ''))){ i++; }
+        continue;
+      }
+
+      // Paragraph - collect contiguous non-empty lines
+      let pLines = [];
+      while(i < lines.length && lines[i].trim() !== '' && !lines[i].match(/^(#{1,6}\s|>\s?|[\-\*\+]\s|\d+\.\s|---+|===+|\*\*\*+|\x00CODEBLOCK)/) ){
+        pLines.push(lines[i]);
+        i++;
+      }
+      if(pLines.length > 0){
+        html += '<p>' + inlineFormat(pLines.join('\n')) + '</p>\n';
+      } else {
+        i++;
+      }
+    }
+
+    // Restore code blocks and inline code
+    html = html.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, i) => codeBlocks[+i]);
+    html = html.replace(/\x00INLINE(\d+)\x00/g, (_, i) => inlineCodes[+i]);
+
+    return html;
+  }
+
+  function parseList(lines, startIdx, type){
+    let items = [];
+    let i = startIdx;
+    const baseIndentMatch = lines[i].match(/^(\s*)/);
+    const baseIndent = baseIndentMatch ? baseIndentMatch[1].length : 0;
+
+    while(i < lines.length){
+      const line = lines[i];
+      if(line.trim() === '') break;
+
+      const indentMatch = line.match(/^(\s*)/);
+      const indent = indentMatch ? indentMatch[1].length : 0;
+
+      const listMatch = type === 'ul' ? line.match(/^(\s*)[\-\*\+]\s+(.*)$/) : line.match(/^(\s*)\d+\.\s+(.*)$/);
+
+      if(listMatch && indent <= baseIndent){
+        items.push(inlineFormat(listMatch[2]));
+      } else if(indent > baseIndent){
+        // Nested content - attach to last item
+        // Collect nested lines
+        let nested = [];
+        while(i < lines.length && lines[i].trim() !== ''){
+          const nIndent = (lines[i].match(/^(\s*)/) || ['',''])[1].length;
+          if(nIndent <= baseIndent && (lines[i].match(/^(\s*)[\-\*\+]\s/) || lines[i].match(/^(\s*)\d+\.\s/))) break;
+          // Remove base indentation
+          nested.push(lines[i].replace(new RegExp('^\\s{0,'+(baseIndent+2)+'}'), ''));
+          i++;
+        }
+        if(items.length > 0){
+          items[items.length-1] += '\n' + parseMarkdown(nested.join('\n'));
+        }
+        continue;
+      } else {
+        break;
+      }
+      i++;
+    }
+
+    return '<' + type + '>' + items.map(it => '<li>' + it + '</li>').join('') + '</' + type + '>\n';
+  }
+
+  function inlineFormat(text){
+    // Images (before links)
+    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+    // Wiki links [[Page Name]]
+    text = text.replace(/\[\[([^\]]+)\]\]/g, function(_, name){
+      const exists = pages.hasOwnProperty(name);
+      return '<a href="#" class="wiki-link' + (exists ? '' : ' missing') + '" data-wiki="'+escapeHtml(name)+'">' + escapeHtml(name) + '</a>';
+    });
+
+    // Standard links [text](url)
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // Bold + italic
+    text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+    // Bold
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+    // Italic
+    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    // Strikethrough
+    text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+    // Line breaks
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
+  }
+
+  /* ===== Render ===== */
+  function renderPreview(){
+    preview.innerHTML = parseMarkdown(editor.value);
+    // Attach wiki link handlers
+    preview.querySelectorAll('a.wiki-link').forEach(a => {
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        const name = this.dataset.wiki;
+        if(pages[name]){
+          openPage(name);
+        } else {
+          // Create page and open
+          pages[name] = { content: '# ' + name + '\n\n', created: Date.now(), modified: Date.now() };
+          savePages(pages);
+          openPage(name);
+          renderPageList();
+        }
+      });
+    });
+  }
+
+  function renderPageList(filter){
+    const f = (filter || '').toLowerCase();
+    const names = Object.keys(pages).sort((a,b) => a.localeCompare(b));
+    pageList.innerHTML = '';
+    names.forEach(name => {
+      if(f && !name.toLowerCase().includes(f)) return;
+      const item = document.createElement('div');
+      item.className = 'page-item' + (name === currentPage ? ' active' : '');
+      item.innerHTML = `
+        <span class="page-name">${escapeHtml(name)}</span>
+        <span class="page-actions">
+          <button title="Rename" data-action="rename" data-name="${escapeHtml(name)}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>
+          </button>
+          <button title="Delete" data-action="delete" data-name="${escapeHtml(name)}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+        </span>
+      `;
+      item.querySelector('.page-name').addEventListener('click', () => openPage(name));
+      item.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const action = btn.dataset.action;
+          const n = btn.dataset.name;
+          if(action === 'rename') openModal('rename', n);
+          if(action === 'delete') deletePage(n);
+        });
+      });
+      pageList.appendChild(item);
+    });
+  }
+
+  /* ===== Page operations ===== */
+  function openPage(name){
+    if(!pages[name]) return;
+    currentPage = name;
+    setActive(name);
+    pageTitle.value = name;
+    editor.value = pages[name].content;
+    renderPreview();
+    renderPageList();
+    closeSidebar();
+  }
+
+  function savePage(){
+    if(!currentPage) return;
+    const newTitle = pageTitle.value.trim();
+    if(!newTitle){ showToast('Page title cannot be empty'); return; }
+    // Rename if title changed
+    if(newTitle !== currentPage){
+      const old = pages[currentPage];
+      delete pages[currentPage];
+      pages[newTitle] = old;
+      currentPage = newTitle;
+      setActive(newTitle);
+    }
+    pages[currentPage].content = editor.value;
+    pages[currentPage].modified = Date.now();
+    savePages(pages);
+    renderPageList();
+    renderPreview();
+    showToast('Page saved');
+  }
+
+  function newPage(name){
+    if(!name || name.trim() === '') return;
+    name = name.trim();
+    if(pages[name]){
+      showToast('Page "'+name+'" already exists');
+      openPage(name);
+      return;
+    }
+    pages[name] = { content: '# ' + name + '\n\n', created: Date.now(), modified: Date.now() };
+    savePages(pages);
+    openPage(name);
+    renderPageList();
+    showToast('Page created');
+  }
+
+  function renamePage(oldName, newName){
+    if(!newName || newName.trim() === '') return;
+    newName = newName.trim();
+    if(newName === oldName) return;
+    if(pages[newName]){ showToast('Page "'+newName+'" already exists'); return; }
+    pages[newName] = { ...pages[oldName], modified: Date.now() };
+    delete pages[oldName];
+    savePages(pages);
+    if(currentPage === oldName) openPage(newName);
+    renderPageList();
+    showToast('Page renamed');
+  }
+
+  function deletePage(name){
+    if(!confirm('Delete "'+name+'"? This cannot be undone.')) return;
+    delete pages[name];
+    savePages(pages);
+    if(currentPage === name){
+      const remaining = Object.keys(pages);
+      if(remaining.length > 0) openPage(remaining.sort()[0]);
+      else {
+        currentPage = '';
+        pageTitle.value = '';
+        editor.value = '';
+        preview.innerHTML = '<p style="color:var(--text-muted)">No pages. Press Ctrl+N to create one.</p>';
+      }
+    }
+    renderPageList();
+    showToast('Page deleted');
+  }
+
+  function exportPage(){
+    if(!currentPage) return;
+    const blob = new Blob([pages[currentPage].content], {type:'text/markdown'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentPage.replace(/[^a-zA-Z0-9_\- ]/g,'_') + '.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Exported ' + currentPage + '.md');
+  }
+
+  /* ===== Modal ===== */
+  function openModal(mode, existingName){
+    modalMode = mode;
+    if(mode === 'new'){
+      modalTitle.textContent = 'New Page';
+      modalConfirm.textContent = 'Create';
+      modalInput.value = '';
+      modalInput.placeholder = 'Page name...';
+    } else {
+      modalTitle.textContent = 'Rename Page';
+      modalConfirm.textContent = 'Rename';
+      modalInput.value = existingName || '';
+      modalInput.placeholder = 'New name...';
+      modalInput.dataset.oldName = existingName;
+    }
+    modalOverlay.classList.add('open');
+    setTimeout(() => modalInput.focus(), 50);
+  }
+
+  function closeModal(){
+    modalOverlay.classList.remove('open');
+    modalInput.value = '';
+    delete modalInput.dataset.oldName;
+  }
+
+  function confirmModal(){
+    const value = modalInput.value.trim();
+    if(!value) return;
+    if(modalMode === 'new') newPage(value);
+    else renamePage(modalInput.dataset.oldName, value);
+    closeModal();
+  }
+
+  /* ===== Sidebar toggle (mobile) ===== */
+  function openSidebar(){ sidebar.classList.add('open'); backdrop.classList.add('open'); }
+  function closeSidebar(){ sidebar.classList.remove('open'); backdrop.classList.remove('open'); }
+
+  /* ===== Toast ===== */
+  let toastTimer;
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  /* ===== Events ===== */
+  editor.addEventListener('input', renderPreview);
+  searchInput.addEventListener('input', () => renderPageList(searchInput.value));
+  btnSave.addEventListener('click', savePage);
+  btnExport.addEventListener('click', exportPage);
+  menuToggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+  backdrop.addEventListener('click', closeSidebar);
+  modalCancel.addEventListener('click', closeModal);
+  modalConfirm.addEventListener('click', confirmModal);
+  modalOverlay.addEventListener('click', e => { if(e.target === modalOverlay) closeModal(); });
+  modalInput.addEventListener('keydown', e => { if(e.key === 'Enter') confirmModal(); if(e.key === 'Escape') closeModal(); });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && e.key === 's'){
+      e.preventDefault();
+      savePage();
+    }
+    if((e.ctrlKey || e.metaKey) && e.key === 'n'){
+      e.preventDefault();
+      openModal('new');
+    }
+    if(e.key === 'Escape' && modalOverlay.classList.contains('open')){
+      closeModal();
+    }
+  });
+
+  // Tab key in editor
+  editor.addEventListener('keydown', function(e){
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      this.value = this.value.substring(0,start) + '  ' + this.value.substring(end);
+      this.selectionStart = this.selectionEnd = start + 2;
+      renderPreview();
+    }
+  });
+
+  /* ===== Init ===== */
+  const active = getActive();
+  if(active && pages[active]) openPage(active);
+  else {
+    const first = Object.keys(pages).sort()[0];
+    if(first) openPage(first);
+  }
+  renderPageList();
+})();
+</script>
+</body>
+</html>
