@@ -12,8 +12,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npx serve . -l 3000',
+    command: 'npx serve -l 3000 -s .',
     port: 3000,
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
   },
 });
