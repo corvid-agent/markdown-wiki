@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/preview.png" alt="markdown-wiki preview" width="100%"></p>
+
 # Markdown Wiki
 
 A personal wiki and knowledge base with Markdown editing and local storage persistence, built as a single-file HTML application.
